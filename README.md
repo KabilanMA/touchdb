@@ -63,7 +63,7 @@ Few example code:
 ```python
 from touchdb import Database
 
-db = Database.Database('./record.db', True)
+db = Database.Connector('./record.db', True)
 db.insert(value={'test_id':"test123"})
 print(db.get(key='cf9a67ed-4bf6-11ed-9284-b72b6fa7f086'))
 print(db.getAll())
