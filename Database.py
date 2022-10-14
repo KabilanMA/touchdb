@@ -4,10 +4,10 @@ import signal
 import json
 import uuid
 from threading import Thread
-from Exceptions import NoValueError
+from .Exceptions import NoValueError
 
 
-class Database(object):
+class Connector(object):
     
     key_string_error = TypeError('Custom type error occured')
     invalid_input_value = NoValueError('No value/Invalid is provided to insert')
