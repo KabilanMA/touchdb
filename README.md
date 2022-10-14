@@ -56,3 +56,23 @@ A sample data record file is given below for testing purpose.
     }
 }
 ```
+
+<br>
+Few example code:
+
+```python
+from touchdb import Database
+
+db = Database.Database('./record.db', True)
+db.insert(value={'test_id':"test123"})
+print(db.get(key='cf9a67ed-4bf6-11ed-9284-b72b6fa7f086'))
+print(db.getAll())
+print(db.getByAttribute(record_type='sickness'))
+print(db.exists(key='cf9a67ed-4bf6-11ed-9284-b72b6fa7f086'))
+print(db.remove(key='cf9a67ed-4bf6-11ed-9284-b72b6fa7f086'))
+print(db.removeByAttribute(record_type='sickness'))
+print(db.totalkeys())
+print(db.totalkeys(key='69840102-479e-11ed-97ec-b526d12bcc50'))
+print(db.add('4e4f3d76-47b0-11ed-8752-b526d12bcc50', {'address':'Eldian Kingdom', 'Kill count':'inf+'}))
+
+```
