@@ -13,7 +13,10 @@ class Connector(object):
     invalid_input_value = NoValueError('No value/Invalid is provided to insert')
     
     def __init__(self, location, auto_dump, sig=True):
-        
+        '''
+        :params:location: Directory location of the database file.
+        :params:auto_dump: Whether to automatically dump the data or wait for manual dump action.
+        '''
         self.load(location, auto_dump)
         self.dthread = None
         if sig:
@@ -36,6 +39,10 @@ class Connector(object):
         signal.signal(signal.SIGTERM, sigterm_handler)
         
     def load(self, location, auto_dump):
+        '''Force the database to read the data from the database file into the memory
+        :params: location: Location to the .db database file.
+        :params: auto_dump: boolean value, if set to True automatically dump the data after each update or insertion. If set to False have to dump the data after each update or insertion manually.'''
+        
         location = os.path.expanduser(location)
         self.loco = location
         self.auto_dump = auto_dump
@@ -46,6 +53,8 @@ class Connector(object):
         return True
     
     def dump(self):
+        '''dump the data in the memory into the database file'''
+        
         self.dthread = Thread(target=json.dump, args=(self.db, open(self.loco, 'w')), kwargs={'indent':4})
         self.dthread.start()
         self.dthread.join()
@@ -67,6 +76,12 @@ class Connector(object):
             
     
     def insert(self, **kwargs):
+        '''
+        Insert the python dictionary data into the database.
+        :params: key - optional: Key of the value to be stored in the database. If not provided a random value will be assigned.
+        :params: value: dict: A python dictionary to be inserted into the database.
+        '''
+        
         try:
             key = kwargs['key']
         except KeyError:
@@ -85,15 +100,19 @@ class Connector(object):
         return key
         
     def get(self, key):
+        '''Get the data from the database using the key'''
         try:
             return self.db[key]
         except KeyError:
             return False
     
     def getAll(self):
+        '''Get all the data in the database as JSON format(python dictionary)'''
         return self.db
     
     def getByAttribute(self, **kwargs):
+        '''Attribute of the record will be checked with the provided values and return the list of mapping data in the database'''
+        
         keys = list(kwargs.keys())
         result = []
         for keyi in self.db:
@@ -111,9 +130,11 @@ class Connector(object):
         return result
         
     def exists(self, key):
+        '''Check if a key exists in the database'''
         return key in self.db
     
     def remove(self, key):
+        '''Remove a particular data mapping to the key in the database'''
         if not key in self.db:
             return False
         del self.db[key]
@@ -121,6 +142,8 @@ class Connector(object):
         return True
     
     def removeByAttribute(self, **kwargs):
+        '''remove all data records in the database which correlate to the attribute value'''
+        
         keys = list(kwargs.keys())
         for keyi in self.db:
             IN = False
@@ -138,6 +161,8 @@ class Connector(object):
         
     
     def totalkeys(self, key=None):
+        '''If the parameter key is not provided return the total number of keys in the database, but if the key is provided return the number of data records inside that particular dictionary'''
+        
         if key is None:
             total = len(self.db)
             return total
@@ -151,6 +176,8 @@ class Connector(object):
         return True
         
     def add(self, key, value:dict):
+        '''Add a new key-value pair to the existing data record with key as provided'''
+        
         key_list = []
         try:
             for key_val in value:
@@ -165,6 +192,7 @@ class Connector(object):
         
         
     def extend(self, datas:dict):
+        '''Extend the database with the provided dictionary data'''
         success = False
         for key in datas:
             if isinstance(datas[key], dict):
@@ -186,6 +214,8 @@ class Connector(object):
             return False
 
     def deldb(self):
+        '''Delete the database from both memory and file.'''
+        
         self.db = {}
         self._autodumpdb()
         return True             
