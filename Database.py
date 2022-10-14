@@ -85,7 +85,7 @@ class Connector(object):
         try:
             key = kwargs['key']
         except KeyError:
-            key = uuid.uuid1()
+            key = str(uuid.uuid1())
         
         try:
             value = kwargs['value']
@@ -145,6 +145,7 @@ class Connector(object):
         '''remove all data records in the database which correlate to the attribute value'''
         
         keys = list(kwargs.keys())
+        key_list = []
         for keyi in self.db:
             IN = False
             for keyj in self.db[keyi]:
@@ -155,7 +156,10 @@ class Connector(object):
                         IN = False
                         break
             if IN:
-                del self.db[keyi]
+                key_list.append(keyi)
+        for key in key_list:
+            del self.db[key]
+            
         self._autodumpdb()
         return True    
         
