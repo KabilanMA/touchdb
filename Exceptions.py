@@ -7,3 +7,7 @@ class CustomError(Exception):
 class NoValueError(CustomError):
     """Raise when no value is provided to insert into the database"""
     pass
+
+class NotImplementedError(CustomError):
+    """Raise when no value is provided to insert into the database"""
+    pass

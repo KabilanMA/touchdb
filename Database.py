@@ -5,12 +5,14 @@ import json
 import uuid
 from threading import Thread
 from .Exceptions import NoValueError
+from .Exceptions import NotImplementedError
 
 
 class Connector(object):
     
     key_string_error = TypeError('Custom type error occured')
     invalid_input_value = NoValueError('No value/Invalid is provided to insert')
+    not_implemented = NotImplementedError('Not implemented')
     
     def __init__(self, location, auto_dump, sig=True):
         '''
@@ -23,13 +25,13 @@ class Connector(object):
             self.set_sigterm_handler()
     
     def __getitem__(self, item):
-        return self.get(item)
+        raise self.not_implemented
     
     def __setitem__(self, key, value):
-        return self.set(key, value)
+        raise self.not_implemented
     
     def __delitem__(self, key):
-        return self.rem(key)
+        raise self.not_implemented
     
     def set_sigterm_handler(self):
         def sigterm_handler():
@@ -49,9 +51,12 @@ class Connector(object):
         if os.path.exists(location):
             self._loaddb()
         else:
-            self.db = {}
+            self.db = []
         return True
     
+    def _dump(self):
+        with open(self.loco, 'w') as dataFile:
+            
     def dump(self):
         '''dump the data in the memory into the database file'''
         
