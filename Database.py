@@ -6,7 +6,7 @@ import uuid
 from threading import Thread
 from .Exceptions import NoValueError
 from .Exceptions import NotImplementedError
-
+from ast import literal_eval
 
 class Connector(object):
     
@@ -21,6 +21,8 @@ class Connector(object):
         '''
         self.load(location, auto_dump)
         self.dthread = None
+        self.temp_data = {}
+        
         if sig:
             self.set_sigterm_handler()
     
@@ -51,36 +53,53 @@ class Connector(object):
         if os.path.exists(location):
             self._loaddb()
         else:
-            self.db = []
-        return True
-    
-    def _dump(self):
-        with open(self.loco, 'w') as dataFile:
-            
-    def dump(self):
-        '''dump the data in the memory into the database file'''
-        
-        self.dthread = Thread(target=json.dump, args=(self.db, open(self.loco, 'w')), kwargs={'indent':4})
-        self.dthread.start()
-        self.dthread.join()
+            self.keys = []
+            with open(self.loco, 'w') as file:
+                file.write('{\n}')
         return True
     
     def _loaddb(self):
         try:
             with open(self.loco, 'r') as dataRecord:
-                self.db = json.load(dataRecord)
+                self.keys = list(json.load(dataRecord).keys())
         except ValueError:
             if os.stat(self.loco).st_size == 0:
-                self.db = {}
+                with open(self.loco, 'w') as file:
+                    file.write('{\n}')
+                self.keys = []
             else:
                 raise # File is not empty, avoid overwriting it
+        
+    def _dump(self):
+        with open(self.loco, 'r+') as dataFile:
+            recordData = literal_eval(dataFile.read())
+            for key in self.temp_data:
+                dataFile.seek(0,2)
+                dataFile.seek(dataFile.tell() - 3)
+                
+                if len(recordData) ==0:
+                    dataFile.write('\n    "{}": '.format(key))
+                else:
+                    dataFile.write(',\n    "{}": '.format(key))
+                    
+                json.dump(self.temp_data[key], dataFile, indent=8)
+                dataFile.seek(dataFile.tell() - 1)
+                dataFile.write('    }\n}')
+        self.temp_data = {}
+            
+    def dump(self):
+        '''dump the data in the memory into the database file'''
+        
+        self.dthread = Thread(target=self._dump)
+        self.dthread.start()
+        self.dthread.join()
+        return True
     
     def _autodumpdb(self):
         if self.auto_dump:
             self.dump()
-            
-    
-    def insert(self, **kwargs):
+             
+    def insert(self, value=None, **kwargs):
         '''
         Insert the python dictionary data into the database.
         :params: key - optional: Key of the value to be stored in the database. If not provided a random value will be assigned.
@@ -93,7 +112,8 @@ class Connector(object):
             key = str(uuid.uuid1())
         
         try:
-            value = kwargs['value']
+            if not value:
+                value = kwargs['value']
             if not isinstance(value, dict):
                 raise self.invalid_input_value
         except KeyError:
@@ -103,86 +123,147 @@ class Connector(object):
         
         self._append(key, value)
         return key
-        
+    
+    def _append(self, key, value:dict):
+        if key in self.keys:
+            raise KeyError
+        else:
+            self.keys.append(key)
+            self.temp_data[key] = value
+            self._autodumpdb()
+            return True
+    
+       
     def get(self, key):
         '''Get the data from the database using the key'''
         try:
-            return self.db[key]
+            if not key in self.keys:
+                raise KeyError
+            else:
+                with open(self.loco, 'r') as file:
+                    readData = literal_eval(file.read())
+                return readData[key]
         except KeyError:
             return False
     
     def getAll(self):
         '''Get all the data in the database as JSON format(python dictionary)'''
-        return self.db
+        try:
+            with open(self.loco, 'r') as file:
+                readData = literal_eval(file.read())
+            return readData
+        except ValueError:
+            return False
     
     def getByAttribute(self, **kwargs):
         '''Attribute of the record will be checked with the provided values and return the list of mapping data in the database'''
         
         keys = list(kwargs.keys())
         result = []
-        for keyi in self.db:
+        temp_data = {}
+        with open(self.loco, 'r') as file:
+            temp_data = literal_eval(file.read())
+            
+        for keyi in temp_data:
             IN = False
-            for keyj in self.db[keyi]:
-                if keyj in keys:
-                    if kwargs[keyj] == self.db[keyi][keyj]:
+            singleRecordKeys = list(temp_data[keyi].keys())
+            for keyj in keys:
+                if not keyj in singleRecordKeys:
+                    IN = False
+                    break
+                else:
+                    if kwargs[keyj] == temp_data[keyi][keyj]:
                         IN = True
                     else:
                         IN = False
                         break
             if IN:
-                result.append(self.db[keyi])
+                result.append(temp_data[keyi])
                 
         return result
         
     def exists(self, key):
         '''Check if a key exists in the database'''
-        return key in self.db
+        return key in self.keys
     
     def remove(self, key):
         '''Remove a particular data mapping to the key in the database'''
-        if not key in self.db:
-            return False
-        del self.db[key]
+        if not key in self.keys:
+            return False, 'No matching in the database'
+        
+        temp_data = {}
+        with open(self.loco, 'r') as file:
+            temp_data = literal_eval(file.read())
+        try:
+            del temp_data[key]
+            self.temp_data = temp_data
+            self.keys = list(self.temp_data.keys())
+            
+            with open(self.loco, 'w') as file:
+                file.write('{\n}')
+        except KeyError:
+            return False, 'Something wrong with the database, please reload the database.'  
+                 
         self._autodumpdb()
-        return True
+        return True, "Removed, Removing a record is very costly"
     
     def removeByAttribute(self, **kwargs):
         '''remove all data records in the database which correlate to the attribute value'''
         
         keys = list(kwargs.keys())
-        key_list = []
-        for keyi in self.db:
+        result = {}
+        temp_data = {}
+        with open(self.loco, 'r') as file:
+            temp_data = literal_eval(file.read())
+            
+        for keyi in temp_data:
             IN = False
-            for keyj in self.db[keyi]:
-                if keyj in keys:
-                    if kwargs[keyj] == self.db[keyi][keyj]:
+            singleRecordKeys = list(temp_data[keyi].keys())
+            for keyj in keys:
+                if not keyj in singleRecordKeys:
+                    IN = False
+                    break
+                else:
+                    if kwargs[keyj] == temp_data[keyi][keyj]:
                         IN = True
                     else:
                         IN = False
                         break
-            if IN:
-                key_list.append(keyi)
-        for key in key_list:
-            del self.db[key]
-            
-        self._autodumpdb()
-        return True    
+            if not IN:
+                result[keyi] = temp_data[keyi]
         
+        if len(result) == len(self.keys):
+            return False, 'No matching data records found'
+        else:
+            self.temp_data = result
+            self.keys = list(self.temp_data.keys())
+            with open(self.loco, 'w') as file:
+                file.write('{\n}')
+                            
+            self._autodumpdb()
+
+            return True, 'Removed, Removing a record is very costly'
     
-    def totalkeys(self, key=None):
+    def totalKeys(self, key=None):
         '''If the parameter key is not provided return the total number of keys in the database, but if the key is provided return the number of data records inside that particular dictionary'''
+        pass    
+    
+    def getAllKeys(self, key=None):
+        '''If the parameter key is not provided return all of the keys in the database, but if the key is provided return all the inner keys of the specific data record'''
         
         if key is None:
-            total = len(self.db)
-            return total
+            return self.keys
         else:
-            total = len(self.db[key])
-            return total
+            result = []
+            if not key in self.keys:
+                return None
+            else:
+                with open(self.loco, 'r') as file:
+                    dataRecord = literal_eval(file.read())
+                
+                result.append(keyi for keyi in dataRecord[key])
+                return result
     
-    def _append(self, key, value:dict):
-        self.db[key] = value
-        self._autodumpdb()
-        return True
         
     def add(self, key, value:dict):
         '''Add a new key-value pair to the existing data record with key as provided'''
