@@ -1,5 +1,4 @@
-[![Downloads](https://pepy.tech/badge/touchdb)](https://pepy.tech/project/touchdb)
-# touchdb
+[![Downloads](https://static.pepy.tech/personalized-badge/touchdb?period=total&units=international_system&left_color=grey&right_color=brightgreen&left_text=Reached)](https://pepy.tech/project/touchdb)
 
 touchdb is a simple document based nosql database built entirely on python. This save the data input which is in python dictionary into a JSON data in a .db file.
 There are only limited number of functionalities that are implemented in the engine but they are more than sufficient to handle normal database queries.
