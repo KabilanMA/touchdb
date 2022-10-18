@@ -3,7 +3,7 @@
 touchdb is a simple document based nosql database built entirely on python. This save the data input which is in python dictionary into a JSON data in a .db file.
 There are only limited number of functionalities that are implemented in the engine but they are more than sufficient to handle normal database queries.
 <br>
-## Find Me <br>
+## Find Me
 
 <ul>
     <li><a href="https://github.com/KabilanMA/touchdb">GitHub</a></li>
@@ -11,18 +11,20 @@ There are only limited number of functionalities that are implemented in the eng
     <li><a href="https://kabilanma.github.io/touchdb/">Website</a></li>
 </ul>
 
-## Installation <br>
+## Installation
 Easy to install in your projects using pip.<br>
 `pip install touchdb`
 <br>
-## Usage<br>
+## Usage
+
 ```python
 >>> from touchdb import Database
 >>> db = Database.Connector('./record.db', True)
 >>> print(db.getByAttribute(record_type='sickness', patient_id='usr1'))
 
 ```
-## List of functions<br>
+## List of functions
+
 1. `load(location, auto_dump)` : Force the database to load the database from the database file into the memory.<br>
 2. `dump()` : Dump the data in the memory into the database file.<br>
 3. `insert(**kwargs)` : Insert the python dictionary data into the database. `key - optional` parameter which provide the key for the value to be inserted. `value` is python `dict` to be inserted into the database.<br>
@@ -70,7 +72,7 @@ A sample data record file is given below for testing purpose.
 
 <br>
 
-## A few example code<br>
+## A few example code
 
 ```python
 from touchdb import Database
